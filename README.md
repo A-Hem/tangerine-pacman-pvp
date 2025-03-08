@@ -1,14 +1,14 @@
 # Tangerine Pacman PVP
 
-A web3-enabled PVP Pacman game where players can compete against each other for cryptocurrency rewards on the Base network.
+A web3 PVP & MVM Pacman game where players pay .0001 eth or the equivalent value in $-TRAP, 1 on 1 winner takes all. Compete against each other for cryptocurrency rewards on the Base network. 
 
 ## About 🍊TRAP Token
 
-🍊TRAP is a meme coin on the Base network centered around the idea that "Trump on Solana is a trap." It was launched as a playful counterpart to the Solana-based Trump tokens. The game integrates this token as one of the payment options, allowing players to:
+🍊TRAP was conceived by @replyfan & @clanker released on the Base network during the Solana $Trump hype. The day Trump gave his Sol, Trump green lights the Solana based token, immediately his wife $Melania and extended family become jealous and start launching shitcoins.. The game integrates the 🍊 Trap token as one of the payment options, reminding players to:
 
 - Pay entry fees using 🍊TRAP tokens
 - Win 🍊TRAP tokens by defeating opponents
-- Support a fun meme coin on the Base network
+- Support an anti meme coin on the Base network
 
 **Token Contract Address**: `0x300Ba4799Ab7d6fd55b87BCcBCeCb772b413349b`
 
@@ -96,6 +96,15 @@ The application will be available at [http://localhost:3000](http://localhost:30
 - Base network for lower gas fees and faster transactions
 - 🍊TRAP token integration with dynamic pricing
 - Uniswap oracle for token price calculation
+
+
+# Future Vision
+
+Integrate unique competitions with mechanisms to ensure fairness to all, allowing anyone to bet on the outcome.
+
+Build infrastructure for user deployed components -  
+Put your AI extensions to the test, PVP is turned into hackathons with large prizes for the top  developers.
+
 
 ## License
 
