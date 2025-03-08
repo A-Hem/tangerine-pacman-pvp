@@ -2,7 +2,7 @@
   "name": "tangerine-pacman-pvp",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://yourusername.github.io/tangerine-pacman-pvp",
+  "homepage": "https://a-hem.github.io/tangerine-pacman-pvp",
   "dependencies": {
     "@testing-library/jest-dom": "^5.16.5",
     "@testing-library/react": "^13.4.0",
@@ -23,9 +23,10 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
+    "build:production": "set \"GENERATE_SOURCEMAP=false\" && set \"CI=false\" && react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "predeploy": "npm run build",
+    "predeploy": "npm run build:production",
     "deploy": "gh-pages -d build"
   },
   "eslintConfig": {

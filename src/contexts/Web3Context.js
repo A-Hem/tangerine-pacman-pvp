@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import { SiweMessage } from 'siwe';
 import { 
@@ -43,85 +43,118 @@ export const Web3Provider = ({ children }) => {
   const [paymentMethod, setPaymentMethod] = useState("eth"); // "eth" or "token"
   const [error, setError] = useState(null);
 
+  // Add useEffect for wallet reconnection on page refresh
+  useEffect(() => {
+    const checkConnection = async () => {
+      if (window.ethereum && window.ethereum.selectedAddress) {
+        try {
+          await connectWallet();
+        } catch (error) {
+          console.error("Failed to reconnect wallet:", error);
+        }
+      }
+    };
+    
+    checkConnection();
+    
+    // Cleanup function
+    return () => {
+      if (window.ethereum) {
+        window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
+        window.ethereum.removeListener('chainChanged', handleChainChanged);
+      }
+    };
+  }, []);
+
   // Connect wallet
   const connectWallet = async () => {
     try {
       // Reset error state
       setError(null);
       
-      if (window.ethereum) {
-        // Request account access
-        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-        
-        // Create ethers provider and signer
-        const ethersProvider = new ethers.BrowserProvider(window.ethereum);
-        const ethersSigner = await ethersProvider.getSigner();
-        
-        // Set state
-        setProvider(ethersProvider);
-        setSigner(ethersSigner);
-        setAccount(accounts[0]);
-        setIsConnected(true);
-        
-        // Check if we're on the Base network
-        const { chainId } = await ethersProvider.getNetwork();
-        if (Number(chainId) !== 8453) {
-          // If not on Base, prompt to switch
-          await switchToBaseNetwork();
-        }
-        
-        // Create game contract instance
-        const contract = new ethers.Contract(
-          GAME_CONTRACT_ADDRESS,
-          gameContractABI,
-          ethersSigner
-        );
-        setGameContract(contract);
-        
-        // Create token contract instance
-        const token = new ethers.Contract(
-          TRAP_TOKEN_ADDRESS,
-          tokenABI,
-          ethersSigner
-        );
-        setTokenContract(token);
-        
-        // Get account ETH balance
-        const accountBalance = await ethersProvider.getBalance(accounts[0]);
-        setBalance(ethers.formatEther(accountBalance));
-        
-        // Get token balance
-        try {
-          const tokenBalanceWei = await token.balanceOf(accounts[0]);
-          setTokenBalance(ethers.formatUnits(tokenBalanceWei, 18)); // Assuming 18 decimals, adjust if different
-        } catch (err) {
-          console.error("Error fetching token balance:", err);
-          setTokenBalance("0");
-        }
-        
-        // Setup event listeners for account changes
-        window.ethereum.on('accountsChanged', handleAccountsChanged);
-        window.ethereum.on('chainChanged', handleChainChanged);
-        
-        return true;
-      } else {
-        setError("Please install MetaMask or another Ethereum wallet");
-        return false;
+      // Check if MetaMask is installed
+      if (!window.ethereum) {
+        setError("Please install MetaMask to use this application");
+        return;
       }
-    } catch (err) {
-      console.error("Error connecting wallet:", err);
-      setError(err.message || "Failed to connect wallet");
-      return false;
+
+      // Request accounts
+      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      
+      if (accounts.length === 0) {
+        setError("No accounts found. Please connect to MetaMask.");
+        return;
+      }
+
+      // Create ethers provider and signer
+      const ethersProvider = new ethers.BrowserProvider(window.ethereum);
+      const ethersSigner = await ethersProvider.getSigner();
+      
+      // Set state
+      setProvider(ethersProvider);
+      setSigner(ethersSigner);
+      setAccount(accounts[0]);
+      setIsConnected(true);
+      
+      // Check if we're on the Base network
+      const { chainId } = await ethersProvider.getNetwork();
+      if (Number(chainId) !== 8453) {
+        // If not on Base, prompt to switch
+        await switchToBaseNetwork();
+      }
+      
+      // Create game contract instance
+      const contract = new ethers.Contract(
+        GAME_CONTRACT_ADDRESS,
+        gameContractABI,
+        ethersSigner
+      );
+      setGameContract(contract);
+      
+      // Create token contract instance
+      const token = new ethers.Contract(
+        TRAP_TOKEN_ADDRESS,
+        tokenABI,
+        ethersSigner
+      );
+      setTokenContract(token);
+      
+      // Get account ETH balance
+      const accountBalance = await ethersProvider.getBalance(accounts[0]);
+      setBalance(ethers.formatEther(accountBalance));
+      
+      // Get token balance
+      try {
+        const tokenBalanceWei = await token.balanceOf(accounts[0]);
+        setTokenBalance(ethers.formatUnits(tokenBalanceWei, 18)); // Assuming 18 decimals, adjust if different
+      } catch (err) {
+        console.error("Error fetching token balance:", err);
+        setTokenBalance("0");
+      }
+      
+      // Add event listeners for account and chain changes
+      window.ethereum.on('accountsChanged', handleAccountsChanged);
+      window.ethereum.on('chainChanged', handleChainChanged);
+
+    } catch (error) {
+      console.error("Error connecting wallet:", error);
+      setError(error.message || "Failed to connect wallet");
+      setIsConnected(false);
     }
   };
 
-  // Switch to Base network
+  // Improve switchToBaseNetwork with better error handling
   const switchToBaseNetwork = async () => {
     try {
-      if (!window.ethereum) return false;
+      setError(null);
       
+      if (!window.ethereum) {
+        setError("Please install MetaMask to use this application");
+        return false;
+      }
+
       try {
-        // Try to switch to Base network
+        // Try to switch to the Base network
         await window.ethereum.request({
           method: 'wallet_switchEthereumChain',
           params: [{ chainId: BASE_NETWORK.chainId }],
@@ -130,17 +163,34 @@ export const Web3Provider = ({ children }) => {
       } catch (switchError) {
         // This error code indicates that the chain has not been added to MetaMask
         if (switchError.code === 4902) {
-          await window.ethereum.request({
-            method: 'wallet_addEthereumChain',
-            params: [BASE_NETWORK],
-          });
-          return true;
+          try {
+            await window.ethereum.request({
+              method: 'wallet_addEthereumChain',
+              params: [
+                {
+                  chainId: BASE_NETWORK.chainId,
+                  chainName: BASE_NETWORK.chainName,
+                  nativeCurrency: BASE_NETWORK.nativeCurrency,
+                  rpcUrls: BASE_NETWORK.rpcUrls,
+                  blockExplorerUrls: BASE_NETWORK.blockExplorerUrls,
+                },
+              ],
+            });
+            return true;
+          } catch (addError) {
+            console.error("Error adding Base network:", addError);
+            setError("Failed to add Base network to your wallet");
+            return false;
+          }
+        } else {
+          console.error("Error switching to Base network:", switchError);
+          setError("Failed to switch to Base network");
+          return false;
         }
-        throw switchError;
       }
-    } catch (err) {
-      console.error("Error switching to Base network:", err);
-      setError(err.message || "Failed to switch to Base network");
+    } catch (error) {
+      console.error("Error in switchToBaseNetwork:", error);
+      setError(error.message || "Failed to switch network");
       return false;
     }
   };
