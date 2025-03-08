@@ -4,11 +4,12 @@ import Home from './components/Home';
 import Game from './components/Game';
 import Leaderboard from './components/Leaderboard';
 import Profile from './components/Profile';
+import Admin from './components/Admin';
 import Navbar from './components/Navbar';
 import { useWeb3 } from './contexts/Web3Context';
 
 function App() {
-  const { isConnected } = useWeb3();
+  const { isConnected, isGameAdmin } = useWeb3();
 
   return (
     <div className="App min-h-screen bg-black text-white">
@@ -24,6 +25,10 @@ function App() {
           <Route 
             path="/profile" 
             element={isConnected ? <Profile /> : <Home />} 
+          />
+          <Route 
+            path="/admin" 
+            element={<Admin />} 
           />
         </Routes>
       </div>

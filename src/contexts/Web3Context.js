@@ -20,6 +20,10 @@ const gameContractABI = [
   "function enterGame() external payable",
   "function enterGameWithToken(uint256 amount) external",
   "function claimReward() external",
+  "function endGame(uint256 gameId, address winner) external",
+  "function addGameAdmin(address newAdmin) external",
+  "function removeGameAdmin(address admin) external",
+  "function isGameAdmin(address admin) external view returns (bool)",
   "event GameStarted(address indexed player1, address indexed player2, uint256 gameId)",
   "event GameEnded(uint256 indexed gameId, address indexed winner)"
 ];
@@ -48,6 +52,7 @@ export const Web3Provider = ({ children }) => {
   const [isLoadingPrice, setIsLoadingPrice] = useState(false);
   const [networkName, setNetworkName] = useState("");
   const [isCorrectNetwork, setIsCorrectNetwork] = useState(false);
+  const [isGameAdmin, setIsGameAdmin] = useState(false);
 
   // Add useEffect for wallet reconnection on page refresh
   useEffect(() => {
@@ -93,6 +98,25 @@ export const Web3Provider = ({ children }) => {
 
     fetchTokenPrice();
   }, [provider]);
+
+  // Check if the connected account is a game admin
+  useEffect(() => {
+    const checkGameAdminStatus = async () => {
+      if (gameContract && account) {
+        try {
+          const isAdmin = await gameContract.isGameAdmin(account);
+          setIsGameAdmin(isAdmin);
+        } catch (error) {
+          console.error("Error checking game admin status:", error);
+          setIsGameAdmin(false);
+        }
+      } else {
+        setIsGameAdmin(false);
+      }
+    };
+
+    checkGameAdminStatus();
+  }, [gameContract, account]);
 
   // Connect wallet
   const connectWallet = async () => {
@@ -476,6 +500,93 @@ export const Web3Provider = ({ children }) => {
     }
   };
 
+  // Add a new game admin (only callable by admin)
+  const addGameAdmin = async (adminAddress) => {
+    try {
+      setError(null);
+      
+      if (!isConnected) {
+        setError("Please connect your wallet first");
+        return { success: false };
+      }
+      
+      if (!isGameAdmin) {
+        setError("Only game admins can add new admins");
+        return { success: false };
+      }
+      
+      const tx = await gameContract.addGameAdmin(adminAddress);
+      const receipt = await tx.wait();
+      
+      return { 
+        success: true,
+        transactionHash: receipt.hash
+      };
+    } catch (error) {
+      console.error("Error adding game admin:", error);
+      setError(error.message || "Failed to add game admin");
+      return { success: false, error: error.message };
+    }
+  };
+
+  // Remove a game admin (only callable by admin)
+  const removeGameAdmin = async (adminAddress) => {
+    try {
+      setError(null);
+      
+      if (!isConnected) {
+        setError("Please connect your wallet first");
+        return { success: false };
+      }
+      
+      if (!isGameAdmin) {
+        setError("Only game admins can remove admins");
+        return { success: false };
+      }
+      
+      const tx = await gameContract.removeGameAdmin(adminAddress);
+      const receipt = await tx.wait();
+      
+      return { 
+        success: true,
+        transactionHash: receipt.hash
+      };
+    } catch (error) {
+      console.error("Error removing game admin:", error);
+      setError(error.message || "Failed to remove game admin");
+      return { success: false, error: error.message };
+    }
+  };
+
+  // End a game and declare a winner (only callable by game admins)
+  const endGameWithWinner = async (gameId, winnerAddress) => {
+    try {
+      setError(null);
+      
+      if (!isConnected) {
+        setError("Please connect your wallet first");
+        return { success: false };
+      }
+      
+      if (!isGameAdmin) {
+        setError("Only game admins can end games");
+        return { success: false };
+      }
+      
+      const tx = await gameContract.endGame(gameId, winnerAddress);
+      const receipt = await tx.wait();
+      
+      return { 
+        success: true,
+        transactionHash: receipt.hash
+      };
+    } catch (error) {
+      console.error("Error ending game:", error);
+      setError(error.message || "Failed to end game");
+      return { success: false, error: error.message };
+    }
+  };
+
   // Context value
   const value = {
     provider,
@@ -501,7 +612,11 @@ export const Web3Provider = ({ children }) => {
     isCorrectNetwork,
     switchToBaseNetwork,
     updateBalances,
-    ADMIN_WALLET_ADDRESS
+    ADMIN_WALLET_ADDRESS,
+    isGameAdmin,
+    addGameAdmin,
+    removeGameAdmin,
+    endGameWithWinner
   };
 
   return <Web3Context.Provider value={value}>{children}</Web3Context.Provider>;

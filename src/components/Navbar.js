@@ -13,7 +13,8 @@ const Navbar = () => {
     disconnectWallet,
     isAuthenticated,
     signInWithEthereum,
-    isLoadingPrice
+    isLoadingPrice,
+    isGameAdmin
   } = useWeb3();
   
   const [isConnecting, setIsConnecting] = useState(false);
@@ -67,6 +68,11 @@ const Navbar = () => {
             {isConnected && (
               <Link to="/profile" className="text-white hover:text-orange-300 transition-colors">
                 Profile
+              </Link>
+            )}
+            {isConnected && isGameAdmin && (
+              <Link to="/admin" className="text-orange-400 hover:text-orange-300 transition-colors font-semibold">
+                Admin
               </Link>
             )}
           </div>
