@@ -46,6 +46,8 @@ export const Web3Provider = ({ children }) => {
   const [error, setError] = useState(null);
   const [tokenEntryFee, setTokenEntryFee] = useState("0");
   const [isLoadingPrice, setIsLoadingPrice] = useState(false);
+  const [networkName, setNetworkName] = useState("");
+  const [isCorrectNetwork, setIsCorrectNetwork] = useState(false);
 
   // Add useEffect for wallet reconnection on page refresh
   useEffect(() => {
@@ -136,9 +138,15 @@ export const Web3Provider = ({ children }) => {
       setBalance(ethers.formatEther(ethBalance));
       setTokenBalance(ethers.formatUnits(tokenBalanceWei, 18));
       
-      // Check if we need to switch to Base network
+      // Check network
       const network = await ethersProvider.getNetwork();
-      if (network.chainId.toString() !== BASE_NETWORK.chainId) {
+      setNetworkName(network.name);
+      
+      const isBase = network.chainId.toString() === BASE_NETWORK.chainId;
+      setIsCorrectNetwork(isBase);
+      
+      // Check if we need to switch to Base network
+      if (!isBase) {
         const switched = await switchToBaseNetwork();
         if (!switched) {
           return false;
@@ -174,6 +182,11 @@ export const Web3Provider = ({ children }) => {
           method: 'wallet_switchEthereumChain',
           params: [{ chainId: BASE_NETWORK.chainId }],
         });
+        
+        // Update network status
+        setIsCorrectNetwork(true);
+        setNetworkName("Base");
+        
         return true;
       } catch (switchError) {
         // This error code indicates that the chain has not been added to MetaMask
@@ -191,6 +204,11 @@ export const Web3Provider = ({ children }) => {
                 },
               ],
             });
+            
+            // Update network status
+            setIsCorrectNetwork(true);
+            setNetworkName("Base");
+            
             return true;
           } catch (addError) {
             console.error("Error adding Base network:", addError);
@@ -219,6 +237,8 @@ export const Web3Provider = ({ children }) => {
     setGameContract(null);
     setTokenContract(null);
     setIsAuthenticated(false);
+    setIsCorrectNetwork(false);
+    setNetworkName("");
     
     // Remove event listeners
     if (window.ethereum) {
@@ -236,13 +256,48 @@ export const Web3Provider = ({ children }) => {
       // User switched accounts
       setAccount(accounts[0]);
       setIsAuthenticated(false); // Reset authentication when account changes
+      
+      // Update balances for new account
+      updateBalances(accounts[0]);
+    }
+  };
+  
+  // Update balances
+  const updateBalances = async (accountAddress) => {
+    if (provider && accountAddress) {
+      try {
+        const ethBalance = await provider.getBalance(accountAddress);
+        setBalance(ethers.formatEther(ethBalance));
+        
+        if (tokenContract) {
+          const tokenBalanceWei = await tokenContract.balanceOf(accountAddress);
+          setTokenBalance(ethers.formatUnits(tokenBalanceWei, 18));
+        }
+      } catch (error) {
+        console.error("Error updating balances:", error);
+      }
     }
   };
 
   // Handle chain changes
-  const handleChainChanged = () => {
-    // Reload the page when the chain changes
-    window.location.reload();
+  const handleChainChanged = async () => {
+    // Check if the new chain is Base
+    if (provider) {
+      try {
+        const network = await provider.getNetwork();
+        setNetworkName(network.name);
+        
+        const isBase = network.chainId.toString() === BASE_NETWORK.chainId;
+        setIsCorrectNetwork(isBase);
+        
+        // Update balances after chain change
+        if (account) {
+          updateBalances(account);
+        }
+      } catch (error) {
+        console.error("Error handling chain change:", error);
+      }
+    }
   };
 
   // Sign in with Ethereum
@@ -303,12 +358,11 @@ export const Web3Provider = ({ children }) => {
       
       if (!isConnected) {
         setError("Please connect your wallet first");
-        return false;
+        return { success: false };
       }
       
       // Check if we're on the right network
-      const network = await provider.getNetwork();
-      if (network.chainId.toString() !== BASE_NETWORK.chainId) {
+      if (!isCorrectNetwork) {
         const switched = await switchToBaseNetwork();
         if (!switched) {
           throw new Error("Please switch to the Base network to play");
@@ -316,12 +370,13 @@ export const Web3Provider = ({ children }) => {
       }
       
       // Refresh balances before proceeding
-      const ethBalance = await provider.getBalance(account);
-      setBalance(ethers.formatEther(ethBalance));
+      await updateBalances(account);
       
       if (paymentMethod === "eth") {
         // Check if user has enough ETH
         const entryFeeWei = ethers.parseEther(ETH_ENTRY_FEE);
+        const ethBalance = await provider.getBalance(account);
+        
         if (ethBalance < entryFeeWei) {
           throw new Error(`Insufficient ETH balance. You need at least ${ETH_ENTRY_FEE} ETH.`);
         }
@@ -331,13 +386,15 @@ export const Web3Provider = ({ children }) => {
           value: ethers.parseEther(ETH_ENTRY_FEE)
         });
         
-        await tx.wait();
+        const receipt = await tx.wait();
         
         // Update balance after transaction
-        const newBalance = await provider.getBalance(account);
-        setBalance(ethers.formatEther(newBalance));
+        await updateBalances(account);
         
-        return true;
+        return { 
+          success: true,
+          transactionHash: receipt.hash
+        };
       } else {
         // Refresh token balance
         const tokenBalanceWei = await tokenContract.balanceOf(account);
@@ -366,13 +423,15 @@ export const Web3Provider = ({ children }) => {
         // Now enter the game with tokens
         try {
           const tx = await gameContract.enterGameWithToken(tokenAmountWei);
-          await tx.wait();
+          const receipt = await tx.wait();
           
           // Update token balance after transaction
-          const newTokenBalance = await tokenContract.balanceOf(account);
-          setTokenBalance(ethers.formatUnits(newTokenBalance, 18));
+          await updateBalances(account);
           
-          return true;
+          return { 
+            success: true,
+            transactionHash: receipt.hash
+          };
         } catch (error) {
           throw new Error("Failed to enter game with tokens. Please try again.");
         }
@@ -380,7 +439,7 @@ export const Web3Provider = ({ children }) => {
     } catch (error) {
       console.error("Error entering game:", error);
       setError(error.message || "Failed to enter game");
-      return false;
+      return { success: false, error: error.message };
     }
   };
 
@@ -423,25 +482,26 @@ export const Web3Provider = ({ children }) => {
     signer,
     account,
     isConnected,
+    connectWallet,
+    disconnectWallet,
+    signInWithEthereum,
     isAuthenticated,
     balance,
     tokenBalance,
     paymentMethod,
-    error,
-    gameContract,
-    tokenContract,
-    connectWallet,
-    disconnectWallet,
-    signInWithEthereum,
+    setPaymentType,
     enterGame,
     claimReward,
-    setPaymentType,
-    ADMIN_WALLET_ADDRESS,
+    error,
     TRAP_TOKEN_ADDRESS,
-    switchToBaseNetwork,
     tokenEntryFee,
     isLoadingPrice,
-    formatTokenAmount: PRICE_ORACLE.formatTokenAmount
+    formatTokenAmount: PRICE_ORACLE.formatTokenAmount,
+    networkName,
+    isCorrectNetwork,
+    switchToBaseNetwork,
+    updateBalances,
+    ADMIN_WALLET_ADDRESS
   };
 
   return <Web3Context.Provider value={value}>{children}</Web3Context.Provider>;

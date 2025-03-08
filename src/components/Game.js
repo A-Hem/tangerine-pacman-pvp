@@ -32,6 +32,7 @@ const Game = () => {
   const [socket, setSocket] = useState(null);
   const [error, setError] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [transactionHash, setTransactionHash] = useState(null);
   
   const { 
     isConnected, 
@@ -40,8 +41,17 @@ const Game = () => {
     claimReward, 
     paymentMethod,
     tokenEntryFee,
-    formatTokenAmount
+    formatTokenAmount,
+    balance,
+    tokenBalance,
+    account
   } = useWeb3();
+  
+  // Format account address for display
+  const formatAddress = (address) => {
+    if (!address) return '';
+    return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+  };
   
   // Initialize socket connection
   useEffect(() => {
@@ -81,6 +91,7 @@ const Game = () => {
     try {
       setError(null);
       setIsProcessing(true);
+      setTransactionHash(null);
       setGameState(GAME_STATE.PROCESSING_PAYMENT);
       
       // Check if wallet is connected
@@ -91,9 +102,24 @@ const Game = () => {
         }
       }
       
-      const success = await enterGame();
+      // Check if user has enough balance
+      if (paymentMethod === 'eth') {
+        if (parseFloat(balance) < parseFloat(ETH_ENTRY_FEE)) {
+          throw new Error(`Insufficient ETH balance. You need at least ${ETH_ENTRY_FEE} ETH to play.`);
+        }
+      } else {
+        if (parseFloat(tokenBalance) < parseFloat(tokenEntryFee)) {
+          throw new Error(`Insufficient ${TRAP_TOKEN_INFO.symbol} balance. You need at least ${tokenEntryFee} ${TRAP_TOKEN_INFO.symbol} to play.`);
+        }
+      }
       
-      if (success) {
+      const result = await enterGame();
+      
+      if (result && result.transactionHash) {
+        setTransactionHash(result.transactionHash);
+      }
+      
+      if (result && result.success) {
         setGameState(GAME_STATE.WAITING_FOR_OPPONENT);
         
         // In a real app, this would be handled by the socket connection
@@ -444,21 +470,63 @@ const Game = () => {
           <div className="flex flex-col items-center">
             <h2 className="text-2xl font-bold text-orange-500 mb-6">Ready to Play?</h2>
             
+            {!isConnected && (
+              <div className="bg-blue-500 bg-opacity-20 border border-blue-500 text-blue-100 p-4 rounded mb-6 max-w-md">
+                <h3 className="font-bold text-blue-300 mb-2">Wallet Not Connected</h3>
+                <p className="text-sm mb-3">You need to connect your wallet before you can play.</p>
+                <button 
+                  onClick={connectWallet}
+                  className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded text-sm transition-colors"
+                >
+                  Connect Wallet
+                </button>
+              </div>
+            )}
+            
+            {isConnected && (
+              <div className="bg-gray-700 p-4 rounded mb-6 max-w-md w-full">
+                <h3 className="font-semibold text-white mb-2">Your Wallet</h3>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-gray-300 text-sm">Address:</span>
+                  <span className="text-white text-sm font-mono">{formatAddress(account)}</span>
+                </div>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-gray-300 text-sm">ETH Balance:</span>
+                  <span className={`text-sm font-mono ${parseFloat(balance) < parseFloat(ETH_ENTRY_FEE) ? 'text-red-400' : 'text-blue-300'}`}>
+                    {parseFloat(balance).toFixed(4)} ETH
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-300 text-sm">{TRAP_TOKEN_INFO.symbol} Balance:</span>
+                  <span className={`text-sm font-mono ${parseFloat(tokenBalance) < parseFloat(tokenEntryFee) ? 'text-red-400' : 'text-orange-300'}`}>
+                    {parseFloat(tokenBalance).toFixed(2)} {TRAP_TOKEN_INFO.symbol}
+                  </span>
+                </div>
+              </div>
+            )}
+            
             <PaymentSelector />
             
             {error && (
-              <div className="bg-red-500 text-white p-4 rounded-lg mb-4">
-                {error}
+              <div className="bg-red-500 text-white p-4 rounded-lg mb-4 max-w-md w-full">
+                <div className="flex items-start">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  <span>{error}</span>
+                </div>
               </div>
             )}
             
             <button 
               onClick={handlePayForGame}
-              disabled={isProcessing}
+              disabled={isProcessing || !isConnected}
               className={`${
                 isProcessing 
                   ? 'bg-gray-500 cursor-not-allowed' 
-                  : 'bg-orange-500 hover:bg-orange-600'
+                  : !isConnected
+                    ? 'bg-gray-500 cursor-not-allowed'
+                    : 'bg-orange-500 hover:bg-orange-600'
               } text-white px-8 py-3 rounded-lg text-xl font-bold transition-colors`}
             >
               {isProcessing ? 'Processing...' : 'Pay & Play Now'}
@@ -471,10 +539,29 @@ const Game = () => {
           <div className="flex flex-col items-center">
             <h2 className="text-2xl font-bold text-orange-500 mb-6">Processing Payment</h2>
             <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-orange-500 mb-4"></div>
-            <p className="text-gray-300">Please confirm the transaction in your wallet...</p>
+            <p className="text-gray-300 mb-2">Please confirm the transaction in your wallet...</p>
+            <p className="text-gray-400 text-sm mb-4">
+              Paying with {paymentMethod === 'eth' 
+                ? `${ETH_ENTRY_FEE} ETH` 
+                : `${formatTokenAmount ? formatTokenAmount(parseFloat(tokenEntryFee)) : tokenEntryFee} ${TRAP_TOKEN_INFO.symbol}`
+              }
+            </p>
+            
+            {transactionHash && (
+              <div className="bg-gray-700 p-3 rounded mb-4 max-w-md w-full">
+                <p className="text-gray-300 text-sm mb-1">Transaction Hash:</p>
+                <p className="text-blue-300 text-xs font-mono break-all">{transactionHash}</p>
+              </div>
+            )}
+            
             {error && (
-              <div className="bg-red-500 text-white p-4 rounded-lg mt-4">
-                {error}
+              <div className="bg-red-500 text-white p-4 rounded-lg mt-4 max-w-md w-full">
+                <div className="flex items-start">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  <span>{error}</span>
+                </div>
               </div>
             )}
           </div>
@@ -485,13 +572,20 @@ const Game = () => {
           <div className="flex flex-col items-center">
             <h2 className="text-2xl font-bold text-orange-500 mb-6">Waiting for Opponent</h2>
             <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-orange-500 mb-4"></div>
-            <p className="text-gray-300">Payment successful! Looking for an opponent...</p>
-            <p className="text-gray-400 text-sm mt-4">
+            <p className="text-gray-300 mb-2">Payment successful! Looking for an opponent...</p>
+            <p className="text-gray-400 text-sm mb-4">
               Using {paymentMethod === 'eth' 
                 ? `${ETH_ENTRY_FEE} ETH` 
                 : `${formatTokenAmount ? formatTokenAmount(parseFloat(tokenEntryFee)) : tokenEntryFee} ${TRAP_TOKEN_INFO.symbol} tokens`
               } for this game
             </p>
+            
+            {transactionHash && (
+              <div className="bg-gray-700 p-3 rounded mb-4 max-w-md w-full">
+                <p className="text-gray-300 text-sm mb-1">Transaction Hash:</p>
+                <p className="text-blue-300 text-xs font-mono break-all">{transactionHash}</p>
+              </div>
+            )}
           </div>
         );
       
