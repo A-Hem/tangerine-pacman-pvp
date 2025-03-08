@@ -1,13 +1,13 @@
 {
   "files": {
-    "main.css": "/tangerine-pacman-pvp/static/css/main.9c8bc58d.css",
-    "main.js": "/tangerine-pacman-pvp/static/js/main.3ed19be0.js",
+    "main.css": "/tangerine-pacman-pvp/static/css/main.0771b15a.css",
+    "main.js": "/tangerine-pacman-pvp/static/js/main.eb9a600f.js",
     "static/js/206.919b65cf.chunk.js": "/tangerine-pacman-pvp/static/js/206.919b65cf.chunk.js",
     "static/media/index.cjs": "/tangerine-pacman-pvp/static/media/index.720d13936a625d158fd6.cjs",
     "index.html": "/tangerine-pacman-pvp/index.html"
   },
   "entrypoints": [
-    "static/css/main.9c8bc58d.css",
-    "static/js/main.3ed19be0.js"
+    "static/css/main.0771b15a.css",
+    "static/js/main.eb9a600f.js"
   ]
 }
