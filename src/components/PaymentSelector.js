@@ -1,5 +1,6 @@
 import React from 'react';
 import { useWeb3 } from '../contexts/Web3Context';
+import { TRAP_TOKEN_INFO } from '../config';
 
 const PaymentSelector = () => {
   const { 
@@ -54,13 +55,13 @@ const PaymentSelector = () => {
         >
           <div className="flex items-center mb-2">
             <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center mr-2">
-              <span className="text-white font-bold">$</span>
+              <span className="text-white font-bold">🍊</span>
             </div>
-            <h3 className="text-lg font-semibold text-white">$-Trap</h3>
+            <h3 className="text-lg font-semibold text-white">{TRAP_TOKEN_INFO.symbol}</h3>
           </div>
-          <p className="text-gray-300 mb-2">Pay with $-Trap tokens</p>
-          <p className="text-sm text-gray-400">Entry Fee: <span className="text-green-400">10 $-Trap</span></p>
-          <p className="text-sm text-gray-400">Your Balance: <span className="text-green-400">{parseFloat(tokenBalance).toFixed(2)} $-Trap</span></p>
+          <p className="text-gray-300 mb-2">Pay with {TRAP_TOKEN_INFO.name} tokens</p>
+          <p className="text-sm text-gray-400">Entry Fee: <span className="text-green-400">10 {TRAP_TOKEN_INFO.symbol}</span></p>
+          <p className="text-sm text-gray-400">Your Balance: <span className="text-green-400">{parseFloat(tokenBalance).toFixed(2)} {TRAP_TOKEN_INFO.symbol}</span></p>
           <p className="text-xs text-gray-500 mt-1">Token: {formatAddress(TRAP_TOKEN_ADDRESS)}</p>
         </div>
       </div>

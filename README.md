@@ -8,8 +8,8 @@ A web3-enabled PVP Pacman game where players can compete against each other for 
 - **PVP Gameplay**: Compete against other players in real-time
 - **Web3 Integration**: Connect your Ethereum wallet (MetaMask recommended)
 - **Base Network Support**: Play on the Base network with lower gas fees
-- **Dual Payment Options**: Pay with ETH or $-Trap tokens
-- **Cryptocurrency Rewards**: Win ETH or $-Trap tokens by defeating your opponents
+- **Dual Payment Options**: Pay with ETH or 🍊TRAP tokens
+- **Cryptocurrency Rewards**: Win ETH or 🍊TRAP tokens by defeating your opponents
 - **Ranking System**: Track your performance against other players
 
 ## How to Play
@@ -18,7 +18,7 @@ A web3-enabled PVP Pacman game where players can compete against each other for 
 2. Switch to the Base network (the app will prompt you to do this)
 3. Choose your payment method:
    - Pay 0.0001 ETH to enter a match, or
-   - Pay 10 $-Trap tokens to enter a match
+   - Pay 10 🍊TRAP tokens to enter a match
 4. Wait for another player to join
 5. Play the game and try to win!
 6. The winner receives the prize pool (minus a 6.9% platform fee)
@@ -45,8 +45,8 @@ A web3-enabled PVP Pacman game where players can compete against each other for 
    - The admin wallet is configured to use `0x5ae019F7eE28612b058381f4Fea213Cc90ee88A4` on the Base network
    - This wallet will receive the platform fees from each game
 
-2. **$-Trap Token**:
-   - The game supports payments using $-Trap tokens
+2. **🍊TRAP Token**:
+   - The game supports payments using 🍊TRAP tokens
    - Token contract address: `0x300Ba4799Ab7d6fd55b87BCcBCeCb772b413349b` on the Base network
 
 3. **Deploy the Smart Contract** (optional for local testing):
@@ -71,7 +71,7 @@ The application will be available at [http://localhost:3000](http://localhost:30
 - SIWE (Sign-In With Ethereum) for authentication
 - Smart contracts for handling payments and rewards
 - Base network for lower gas fees and faster transactions
-- $-Trap token integration for alternative payment method
+- 🍊TRAP token integration for alternative payment method
 
 ## License
 

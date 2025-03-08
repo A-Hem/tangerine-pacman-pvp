@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useWeb3 } from '../contexts/Web3Context';
+import { TRAP_TOKEN_INFO } from '../config';
 
 const Home = () => {
   const { isConnected, connectWallet } = useWeb3();
@@ -18,19 +19,15 @@ const Home = () => {
 
       <div className="bg-gray-800 p-8 rounded-lg shadow-lg max-w-3xl w-full mb-12">
         <h2 className="text-2xl font-bold text-orange-400 mb-4">How to Play</h2>
-        <ol className="list-decimal list-inside space-y-3 text-gray-300">
-          <li>Connect your Ethereum wallet (MetaMask recommended)</li>
-          <li>Switch to the Base network (the app will prompt you to do this)</li>
-          <li>Choose your payment method:
-            <ul className="list-disc list-inside ml-6 mt-2 space-y-1">
-              <li>Pay 0.0001 ETH to enter a match, or</li>
-              <li>Pay 10 $-Trap tokens to enter a match</li>
-            </ul>
-          </li>
-          <li>Wait for another player to join</li>
-          <li>Play the game and try to win!</li>
-          <li>The winner receives the prize pool (minus a 6.9% platform fee)</li>
-        </ol>
+        <ul className="list-disc pl-5 space-y-2 text-gray-300">
+          <li>Connect your wallet to get started</li>
+          <li>Pay 0.0001 ETH or</li>
+          <li>Pay 10 {TRAP_TOKEN_INFO.symbol} tokens to enter a match</li>
+          <li>Use arrow keys to control your Pacman</li>
+          <li>Eat dots and power pellets to score points</li>
+          <li>Avoid ghosts or eat them when powered up</li>
+          <li>The player with the highest score after 2 minutes wins!</li>
+        </ul>
       </div>
 
       <div className="bg-gray-800 p-8 rounded-lg shadow-lg max-w-3xl w-full mb-12">
@@ -40,8 +37,8 @@ const Home = () => {
           <li>PVP Gameplay: Compete against other players in real-time</li>
           <li>Web3 Integration: Connect your Ethereum wallet</li>
           <li>Base Network Support: Play with lower gas fees</li>
-          <li>Dual Payment Options: Pay with ETH or $-Trap tokens</li>
-          <li>Cryptocurrency Rewards: Win ETH or $-Trap tokens by defeating your opponents</li>
+          <li>Dual Payment Options: Pay with ETH or {TRAP_TOKEN_INFO.symbol} tokens</li>
+          <li>Cryptocurrency Rewards: Win ETH or {TRAP_TOKEN_INFO.symbol} tokens by defeating your opponents</li>
           <li>Ranking System: Track your performance against other players</li>
         </ul>
       </div>

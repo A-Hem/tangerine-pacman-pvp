@@ -40,7 +40,7 @@ async function main() {
     
     // console.log('PacmanGame deployed to:', pacmanGame.address);
     console.log('Admin wallet set to:', adminWalletAddress);
-    console.log('$-Trap token address:', '0x300Ba4799Ab7d6fd55b87BCcBCeCb772b413349b');
+    console.log('🍊TRAP token address:', '0x300Ba4799Ab7d6fd55b87BCcBCeCb772b413349b');
     
     // Update the contract address in Web3Context.js
     // const web3ContextPath = path.join(__dirname, '../contexts/Web3Context.js');

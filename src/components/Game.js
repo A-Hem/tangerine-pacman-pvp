@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useWeb3 } from '../contexts/Web3Context';
 import PaymentSelector from './PaymentSelector';
 import io from 'socket.io-client';
+import { TRAP_TOKEN_INFO } from '../config';
 
 // Game constants
 const CANVAS_WIDTH = 600;
@@ -435,7 +436,7 @@ const Game = () => {
             <h2 className="text-2xl font-bold text-orange-500 mb-6">Waiting for Opponent</h2>
             <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-orange-500 mb-4"></div>
             <p className="text-gray-300">Payment successful! Looking for an opponent...</p>
-            <p className="text-gray-400 text-sm mt-4">Using {paymentMethod === 'eth' ? 'ETH' : '$-Trap tokens'} for this game</p>
+            <p className="text-gray-400 text-sm mt-4">Using {paymentMethod === 'eth' ? 'ETH' : `${TRAP_TOKEN_INFO.symbol} tokens`} for this game</p>
           </div>
         );
       

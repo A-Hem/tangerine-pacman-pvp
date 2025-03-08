@@ -6,19 +6,19 @@ pragma solidity ^0.8.17;
  * @dev Contract for handling Pacman PVP game payments and rewards on the Base network
  * @notice This contract is designed to be deployed on the Base network
  * @notice Admin wallet is set to 0x5ae019F7eE28612b058381f4Fea213Cc90ee88A4
- * @notice Supports both ETH and $-Trap token (0x300Ba4799Ab7d6fd55b87BCcBCeCb772b413349b) payments
+ * @notice Supports both ETH and 🍊TRAP token (0x300Ba4799Ab7d6fd55b87BCcBCeCb772b413349b) payments
  */
 contract PacmanGame {
     // Game fee constants
     uint256 public constant ENTRY_FEE = 0.0001 ether;
-    uint256 public constant TOKEN_ENTRY_FEE = 10 * 10**18; // 10 $-Trap tokens (assuming 18 decimals)
+    uint256 public constant TOKEN_ENTRY_FEE = 10 * 10**18; // 10 🍊TRAP tokens (assuming 18 decimals)
     uint256 public constant PLATFORM_FEE_PERCENTAGE = 69; // 6.9% (69 / 1000)
     uint256 public constant PERCENTAGE_DENOMINATOR = 1000;
     
     // Admin wallet
     address public adminWallet;
     
-    // $-Trap token address
+    // 🍊TRAP token address
     address public constant TRAP_TOKEN_ADDRESS = 0x300Ba4799Ab7d6fd55b87BCcBCeCb772b413349b;
     
     // Interface for ERC20 token
@@ -127,7 +127,7 @@ contract PacmanGame {
     }
     
     /**
-     * @dev Player enters the game by paying with $-Trap tokens
+     * @dev Player enters the game by paying with 🍊TRAP tokens
      */
     function enterGameWithToken() external {
         // Get token contract
