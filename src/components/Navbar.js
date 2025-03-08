@@ -19,6 +19,15 @@ const Navbar = () => {
     return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
   };
 
+  // Handle sign in
+  const handleSignIn = async () => {
+    try {
+      await signInWithEthereum();
+    } catch (error) {
+      console.error("Error signing in:", error);
+    }
+  };
+
   return (
     <nav className="bg-gray-900 p-4">
       <div className="container mx-auto flex justify-between items-center">
@@ -53,13 +62,17 @@ const Navbar = () => {
                 <span className="ml-2 text-xs md:text-sm text-green-400">{parseFloat(balance).toFixed(4)} ETH</span>
               </div>
               
-              {!isAuthenticated && (
+              {!isAuthenticated ? (
                 <button
-                  onClick={signInWithEthereum}
+                  onClick={handleSignIn}
                   className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded text-sm"
                 >
                   Sign In
                 </button>
+              ) : (
+                <span className="bg-green-500 text-white px-4 py-2 rounded text-sm">
+                  Signed In ✓
+                </span>
               )}
               
               <button

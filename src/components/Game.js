@@ -14,6 +14,7 @@ const GRID_HEIGHT = CANVAS_HEIGHT / CELL_SIZE;
 // Game states
 const GAME_STATE = {
   WAITING_FOR_PAYMENT: 'WAITING_FOR_PAYMENT',
+  PROCESSING_PAYMENT: 'PROCESSING_PAYMENT',
   WAITING_FOR_OPPONENT: 'WAITING_FOR_OPPONENT',
   PLAYING: 'PLAYING',
   GAME_OVER: 'GAME_OVER'
@@ -30,6 +31,7 @@ const Game = () => {
   const [countdown, setCountdown] = useState(null);
   const [socket, setSocket] = useState(null);
   const [error, setError] = useState(null);
+  const [isProcessing, setIsProcessing] = useState(false);
   
   const { 
     isConnected, 
@@ -74,9 +76,23 @@ const Game = () => {
   
   // Handle game payment
   const handlePayForGame = async () => {
+    if (isProcessing) return; // Prevent multiple clicks
+    
     try {
       setError(null);
+      setIsProcessing(true);
+      setGameState(GAME_STATE.PROCESSING_PAYMENT);
+      
+      // Check if wallet is connected
+      if (!isConnected) {
+        await connectWallet();
+        if (!isConnected) {
+          throw new Error("Please connect your wallet to play");
+        }
+      }
+      
       const success = await enterGame();
+      
       if (success) {
         setGameState(GAME_STATE.WAITING_FOR_OPPONENT);
         
@@ -99,10 +115,17 @@ const Game = () => {
             });
           }, 1000);
         }, 3000);
+      } else {
+        // If enterGame returned false, there was an error
+        setGameState(GAME_STATE.WAITING_FOR_PAYMENT);
+        throw new Error("Payment failed. Please try again.");
       }
     } catch (error) {
       console.error('Error paying for game:', error);
       setError(error.message || "Failed to pay for game");
+      setGameState(GAME_STATE.WAITING_FOR_PAYMENT);
+    } finally {
+      setIsProcessing(false);
     }
   };
   
@@ -431,10 +454,29 @@ const Game = () => {
             
             <button 
               onClick={handlePayForGame}
-              className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-3 rounded-lg text-xl font-bold"
+              disabled={isProcessing}
+              className={`${
+                isProcessing 
+                  ? 'bg-gray-500 cursor-not-allowed' 
+                  : 'bg-orange-500 hover:bg-orange-600'
+              } text-white px-8 py-3 rounded-lg text-xl font-bold transition-colors`}
             >
-              Pay & Play Now
+              {isProcessing ? 'Processing...' : 'Pay & Play Now'}
             </button>
+          </div>
+        );
+      
+      case GAME_STATE.PROCESSING_PAYMENT:
+        return (
+          <div className="flex flex-col items-center">
+            <h2 className="text-2xl font-bold text-orange-500 mb-6">Processing Payment</h2>
+            <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-orange-500 mb-4"></div>
+            <p className="text-gray-300">Please confirm the transaction in your wallet...</p>
+            {error && (
+              <div className="bg-red-500 text-white p-4 rounded-lg mt-4">
+                {error}
+              </div>
+            )}
           </div>
         );
       

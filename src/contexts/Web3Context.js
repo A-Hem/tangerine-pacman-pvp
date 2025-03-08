@@ -101,7 +101,7 @@ export const Web3Provider = ({ children }) => {
       // Check if MetaMask is installed
       if (!window.ethereum) {
         setError("Please install MetaMask to use this application");
-        return;
+        return false;
       }
 
       // Request accounts
@@ -109,63 +109,52 @@ export const Web3Provider = ({ children }) => {
       
       if (accounts.length === 0) {
         setError("No accounts found. Please connect to MetaMask.");
-        return;
+        return false;
       }
 
       // Create ethers provider and signer
       const ethersProvider = new ethers.BrowserProvider(window.ethereum);
       const ethersSigner = await ethersProvider.getSigner();
       
-      // Set state
+      // Set provider and signer
       setProvider(ethersProvider);
       setSigner(ethersSigner);
       setAccount(accounts[0]);
       setIsConnected(true);
       
-      // Check if we're on the Base network
-      const { chainId } = await ethersProvider.getNetwork();
-      if (Number(chainId) !== 8453) {
-        // If not on Base, prompt to switch
-        await switchToBaseNetwork();
-      }
+      // Create contract instances
+      const game = new ethers.Contract(GAME_CONTRACT_ADDRESS, gameContractABI, ethersSigner);
+      const token = new ethers.Contract(TRAP_TOKEN_ADDRESS, tokenABI, ethersSigner);
       
-      // Create game contract instance
-      const contract = new ethers.Contract(
-        GAME_CONTRACT_ADDRESS,
-        gameContractABI,
-        ethersSigner
-      );
-      setGameContract(contract);
-      
-      // Create token contract instance
-      const token = new ethers.Contract(
-        TRAP_TOKEN_ADDRESS,
-        tokenABI,
-        ethersSigner
-      );
+      setGameContract(game);
       setTokenContract(token);
       
-      // Get account ETH balance
-      const accountBalance = await ethersProvider.getBalance(accounts[0]);
-      setBalance(ethers.formatEther(accountBalance));
+      // Get balances
+      const ethBalance = await ethersProvider.getBalance(accounts[0]);
+      const tokenBalanceWei = await token.balanceOf(accounts[0]);
       
-      // Get token balance
-      try {
-        const tokenBalanceWei = await token.balanceOf(accounts[0]);
-        setTokenBalance(ethers.formatUnits(tokenBalanceWei, 18)); // Assuming 18 decimals, adjust if different
-      } catch (err) {
-        console.error("Error fetching token balance:", err);
-        setTokenBalance("0");
+      setBalance(ethers.formatEther(ethBalance));
+      setTokenBalance(ethers.formatUnits(tokenBalanceWei, 18));
+      
+      // Check if we need to switch to Base network
+      const network = await ethersProvider.getNetwork();
+      if (network.chainId.toString() !== BASE_NETWORK.chainId) {
+        const switched = await switchToBaseNetwork();
+        if (!switched) {
+          return false;
+        }
       }
-      
+
       // Add event listeners for account and chain changes
       window.ethereum.on('accountsChanged', handleAccountsChanged);
       window.ethereum.on('chainChanged', handleChainChanged);
 
+      return true;
     } catch (error) {
       console.error("Error connecting wallet:", error);
       setError(error.message || "Failed to connect wallet");
       setIsConnected(false);
+      return false;
     }
   };
 
@@ -246,6 +235,7 @@ export const Web3Provider = ({ children }) => {
     } else {
       // User switched accounts
       setAccount(accounts[0]);
+      setIsAuthenticated(false); // Reset authentication when account changes
     }
   };
 
@@ -313,40 +303,79 @@ export const Web3Provider = ({ children }) => {
       
       if (!isConnected) {
         setError("Please connect your wallet first");
-        return;
+        return false;
       }
       
+      // Check if we're on the right network
+      const network = await provider.getNetwork();
+      if (network.chainId.toString() !== BASE_NETWORK.chainId) {
+        const switched = await switchToBaseNetwork();
+        if (!switched) {
+          throw new Error("Please switch to the Base network to play");
+        }
+      }
+      
+      // Refresh balances before proceeding
+      const ethBalance = await provider.getBalance(account);
+      setBalance(ethers.formatEther(ethBalance));
+      
       if (paymentMethod === "eth") {
+        // Check if user has enough ETH
+        const entryFeeWei = ethers.parseEther(ETH_ENTRY_FEE);
+        if (ethBalance < entryFeeWei) {
+          throw new Error(`Insufficient ETH balance. You need at least ${ETH_ENTRY_FEE} ETH.`);
+        }
+        
         // Enter game with ETH
         const tx = await gameContract.enterGame({
           value: ethers.parseEther(ETH_ENTRY_FEE)
         });
         
         await tx.wait();
+        
+        // Update balance after transaction
+        const newBalance = await provider.getBalance(account);
+        setBalance(ethers.formatEther(newBalance));
+        
         return true;
       } else {
+        // Refresh token balance
+        const tokenBalanceWei = await tokenContract.balanceOf(account);
+        setTokenBalance(ethers.formatUnits(tokenBalanceWei, 18));
+        
         // Enter game with tokens
         // First, approve the token transfer
         const tokenAmountWei = ethers.parseEther(tokenEntryFee);
         
         // Check if we have enough tokens
-        const userBalance = await tokenContract.balanceOf(account);
-        if (userBalance.lt(tokenAmountWei)) {
-          setError(`Insufficient token balance. You need ${tokenEntryFee} 🍊TRAP tokens.`);
-          return false;
+        if (tokenBalanceWei < tokenAmountWei) {
+          throw new Error(`Insufficient token balance. You need ${tokenEntryFee} 🍊TRAP tokens.`);
         }
         
         // Check if we already have approval
         const allowance = await tokenContract.allowance(account, GAME_CONTRACT_ADDRESS);
-        if (allowance.lt(tokenAmountWei)) {
-          const approveTx = await tokenContract.approve(GAME_CONTRACT_ADDRESS, tokenAmountWei);
-          await approveTx.wait();
+        if (allowance < tokenAmountWei) {
+          try {
+            const approveTx = await tokenContract.approve(GAME_CONTRACT_ADDRESS, tokenAmountWei);
+            await approveTx.wait();
+          } catch (error) {
+            throw new Error("Failed to approve token transfer. Please try again.");
+          }
         }
         
         // Now enter the game with tokens
-        const tx = await gameContract.enterGameWithToken(tokenAmountWei);
-        await tx.wait();
-        return true;
+        try {
+          const tx = await gameContract.enterGameWithToken(tokenAmountWei);
+          await tx.wait();
+          
+          // Update token balance after transaction
+          const newTokenBalance = await tokenContract.balanceOf(account);
+          setTokenBalance(ethers.formatUnits(newTokenBalance, 18));
+          
+          return true;
+        } catch (error) {
+          throw new Error("Failed to enter game with tokens. Please try again.");
+        }
       }
     } catch (error) {
       console.error("Error entering game:", error);
@@ -421,7 +450,7 @@ export const Web3Provider = ({ children }) => {
 // Custom hook to use the Web3 context
 export const useWeb3 = () => {
   const context = useContext(Web3Context);
-  if (context === undefined) {
+  if (!context) {
     throw new Error('useWeb3 must be used within a Web3Provider');
   }
   return context;
