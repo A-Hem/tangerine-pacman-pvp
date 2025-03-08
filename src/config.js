@@ -33,5 +33,12 @@ export const TRAP_TOKEN_INFO = {
   name: "🍊TRAP",
   symbol: "🍊TRAP",
   decimals: 18,
-  logo: "https://a-hem.github.io/tangerine-pacman-pvp/trap-token-logo.png", // Add a logo image to your public folder
+  logo: "https://a-hem.github.io/tangerine-pacman-pvp/trap-token-logo.svg",
+  description: "A meme coin on Base network centered around the idea that Trump on Solana is a trap. Launched as a playful counterpart to the Solana-based Trump tokens.",
+  uniswapUrl: "https://app.uniswap.org/explore/tokens/base/0x300ba4799ab7d6fd55b87bccbcecb772b413349b",
+  contractAddress: "0x300Ba4799Ab7d6fd55b87BCcBCeCb772b413349b",
+  network: "Base",
+  launchDate: "Launched when Trump tokens appeared on Solana",
+  category: "Meme Coin",
+  basescanUrl: "https://basescan.org/token/0x300Ba4799Ab7d6fd55b87BCcBCeCb772b413349b",
 }; 

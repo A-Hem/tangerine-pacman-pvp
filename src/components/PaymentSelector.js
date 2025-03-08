@@ -62,7 +62,25 @@ const PaymentSelector = () => {
           <p className="text-gray-300 mb-2">Pay with {TRAP_TOKEN_INFO.name} tokens</p>
           <p className="text-sm text-gray-400">Entry Fee: <span className="text-green-400">10 {TRAP_TOKEN_INFO.symbol}</span></p>
           <p className="text-sm text-gray-400">Your Balance: <span className="text-green-400">{parseFloat(tokenBalance).toFixed(2)} {TRAP_TOKEN_INFO.symbol}</span></p>
-          <p className="text-xs text-gray-500 mt-1">Token: {formatAddress(TRAP_TOKEN_ADDRESS)}</p>
+          <p className="text-xs text-gray-500 mt-1">Token: <a 
+            href={`https://basescan.org/token/${TRAP_TOKEN_ADDRESS}`} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-orange-400 hover:underline"
+          >
+            {formatAddress(TRAP_TOKEN_ADDRESS)}
+          </a></p>
+          <div className="mt-2 text-xs text-gray-400">
+            <p>"{TRAP_TOKEN_INFO.description.substring(0, 60)}..."</p>
+            <a 
+              href={TRAP_TOKEN_INFO.uniswapUrl} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-orange-400 hover:underline"
+            >
+              View on Uniswap
+            </a>
+          </div>
         </div>
       </div>
     </div>

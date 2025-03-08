@@ -2,23 +2,48 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useWeb3 } from '../contexts/Web3Context';
 import { TRAP_TOKEN_INFO } from '../config';
+import TokenInfo from './TokenInfo';
 
 const Home = () => {
-  const { isConnected, connectWallet } = useWeb3();
+  const { connectWallet, isConnected } = useWeb3();
 
   return (
-    <div className="flex flex-col items-center justify-center py-12">
-      <div className="text-center mb-12">
-        <h1 className="text-4xl md:text-6xl font-bold text-orange-500 mb-4">
-          Tangerine Pacman PVP
-        </h1>
-        <p className="text-xl text-gray-300 max-w-2xl mx-auto">
-          A web3-enabled PVP Pacman game where players can compete against each other for cryptocurrency rewards on the Base network.
-        </p>
+    <div className="flex flex-col items-center">
+      <div className="text-center mb-8">
+        <h1 className="text-4xl md:text-5xl font-bold text-orange-500 mb-4">Tangerine Pacman PVP</h1>
+        <p className="text-xl text-gray-300">A Web3 PVP Pacman Game on Base Network</p>
+        <p className="text-md text-orange-400 mt-2">Play with ETH or {TRAP_TOKEN_INFO.symbol} tokens!</p>
       </div>
 
-      <div className="bg-gray-800 p-8 rounded-lg shadow-lg max-w-3xl w-full mb-12">
-        <h2 className="text-2xl font-bold text-orange-400 mb-4">How to Play</h2>
+      {!isConnected ? (
+        <div className="bg-gray-800 p-8 rounded-lg shadow-lg max-w-md w-full mb-12">
+          <h2 className="text-2xl font-bold text-orange-400 mb-4">Connect Your Wallet</h2>
+          <p className="text-gray-300 mb-6">Connect your wallet to start playing Tangerine Pacman PVP and compete for crypto rewards!</p>
+          <button
+            onClick={connectWallet}
+            className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-4 rounded transition-colors"
+          >
+            Connect Wallet
+          </button>
+        </div>
+      ) : (
+        <div className="bg-gray-800 p-8 rounded-lg shadow-lg max-w-md w-full mb-12">
+          <h2 className="text-2xl font-bold text-orange-400 mb-4">Ready to Play!</h2>
+          <p className="text-gray-300 mb-6">Your wallet is connected. You're ready to start playing!</p>
+          <Link
+            to="/game"
+            className="block w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-4 rounded text-center transition-colors"
+          >
+            Play Now
+          </Link>
+        </div>
+      )}
+
+      {/* Token Info Section */}
+      <TokenInfo />
+
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold text-orange-500 mb-4">How to Play</h2>
         <ul className="list-disc pl-5 space-y-2 text-gray-300">
           <li>Connect your wallet to get started</li>
           <li>Pay 0.0001 ETH or</li>
@@ -30,10 +55,9 @@ const Home = () => {
         </ul>
       </div>
 
-      <div className="bg-gray-800 p-8 rounded-lg shadow-lg max-w-3xl w-full mb-12">
-        <h2 className="text-2xl font-bold text-orange-400 mb-4">Game Features</h2>
-        <ul className="list-disc list-inside space-y-3 text-gray-300">
-          <li>Tangerine-themed Pacman character</li>
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold text-orange-500 mb-4">Features</h2>
+        <ul className="list-disc pl-5 space-y-2 text-gray-300">
           <li>PVP Gameplay: Compete against other players in real-time</li>
           <li>Web3 Integration: Connect your Ethereum wallet</li>
           <li>Base Network Support: Play with lower gas fees</li>
@@ -41,31 +65,6 @@ const Home = () => {
           <li>Cryptocurrency Rewards: Win ETH or {TRAP_TOKEN_INFO.symbol} tokens by defeating your opponents</li>
           <li>Ranking System: Track your performance against other players</li>
         </ul>
-      </div>
-
-      <div className="flex flex-col md:flex-row gap-4">
-        {isConnected ? (
-          <Link 
-            to="/game" 
-            className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-3 rounded-lg text-xl font-bold"
-          >
-            Play Now
-          </Link>
-        ) : (
-          <button 
-            onClick={connectWallet}
-            className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-3 rounded-lg text-xl font-bold"
-          >
-            Connect Wallet to Play
-          </button>
-        )}
-        
-        <Link 
-          to="/leaderboard" 
-          className="bg-gray-700 hover:bg-gray-600 text-white px-8 py-3 rounded-lg text-xl font-bold"
-        >
-          View Leaderboard
-        </Link>
       </div>
     </div>
   );

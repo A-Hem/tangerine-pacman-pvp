@@ -2,6 +2,18 @@
 
 A web3-enabled PVP Pacman game where players can compete against each other for cryptocurrency rewards on the Base network.
 
+## About 🍊TRAP Token
+
+🍊TRAP is a meme coin on the Base network centered around the idea that "Trump on Solana is a trap." It was launched as a playful counterpart to the Solana-based Trump tokens. The game integrates this token as one of the payment options, allowing players to:
+
+- Pay entry fees using 🍊TRAP tokens
+- Win 🍊TRAP tokens by defeating opponents
+- Support a fun meme coin on the Base network
+
+**Token Contract Address**: `0x300Ba4799Ab7d6fd55b87BCcBCeCb772b413349b`
+
+**Uniswap**: [View on Uniswap](https://app.uniswap.org/explore/tokens/base/0x300ba4799ab7d6fd55b87bccbcecb772b413349b)
+
 ## Features
 
 - **Tangerine-themed Pacman character**: A unique twist on the classic Pacman
@@ -48,6 +60,7 @@ A web3-enabled PVP Pacman game where players can compete against each other for 
 2. **🍊TRAP Token**:
    - The game supports payments using 🍊TRAP tokens
    - Token contract address: `0x300Ba4799Ab7d6fd55b87BCcBCeCb772b413349b` on the Base network
+   - A meme coin centered around the idea that "Trump on Solana is a trap"
 
 3. **Deploy the Smart Contract** (optional for local testing):
    - The smart contract is located in `src/contracts/PacmanGame.sol`
