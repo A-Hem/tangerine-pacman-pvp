@@ -14,6 +14,14 @@ A web3-enabled PVP Pacman game where players can compete against each other for 
 
 **Uniswap**: [View on Uniswap](https://app.uniswap.org/explore/tokens/base/0x300ba4799ab7d6fd55b87bccbcecb772b413349b)
 
+## Dynamic Pricing
+
+The game uses Uniswap oracle pricing to ensure that players pay the same value whether using ETH or 🍊TRAP tokens:
+
+- ETH entry fee is fixed at 0.0001 ETH
+- 🍊TRAP token entry fee is dynamically calculated to be equivalent to 0.0001 ETH based on current market rates
+- This ensures fair pricing regardless of which payment method you choose
+
 ## Features
 
 - **Tangerine-themed Pacman character**: A unique twist on the classic Pacman
@@ -21,6 +29,7 @@ A web3-enabled PVP Pacman game where players can compete against each other for 
 - **Web3 Integration**: Connect your Ethereum wallet (MetaMask recommended)
 - **Base Network Support**: Play on the Base network with lower gas fees
 - **Dual Payment Options**: Pay with ETH or 🍊TRAP tokens
+- **Dynamic Pricing**: Token amount is calculated based on ETH equivalent value
 - **Cryptocurrency Rewards**: Win ETH or 🍊TRAP tokens by defeating your opponents
 - **Ranking System**: Track your performance against other players
 
@@ -30,7 +39,7 @@ A web3-enabled PVP Pacman game where players can compete against each other for 
 2. Switch to the Base network (the app will prompt you to do this)
 3. Choose your payment method:
    - Pay 0.0001 ETH to enter a match, or
-   - Pay 10 🍊TRAP tokens to enter a match
+   - Pay the equivalent value in 🍊TRAP tokens (dynamically calculated)
 4. Wait for another player to join
 5. Play the game and try to win!
 6. The winner receives the prize pool (minus a 6.9% platform fee)
@@ -61,6 +70,7 @@ A web3-enabled PVP Pacman game where players can compete against each other for 
    - The game supports payments using 🍊TRAP tokens
    - Token contract address: `0x300Ba4799Ab7d6fd55b87BCcBCeCb772b413349b` on the Base network
    - A meme coin centered around the idea that "Trump on Solana is a trap"
+   - Token amount is dynamically calculated based on ETH equivalent value
 
 3. **Deploy the Smart Contract** (optional for local testing):
    - The smart contract is located in `src/contracts/PacmanGame.sol`
@@ -84,7 +94,8 @@ The application will be available at [http://localhost:3000](http://localhost:30
 - SIWE (Sign-In With Ethereum) for authentication
 - Smart contracts for handling payments and rewards
 - Base network for lower gas fees and faster transactions
-- 🍊TRAP token integration for alternative payment method
+- 🍊TRAP token integration with dynamic pricing
+- Uniswap oracle for token price calculation
 
 ## License
 

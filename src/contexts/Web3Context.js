@@ -7,8 +7,10 @@ import {
   TRAP_TOKEN_ADDRESS,
   ETH_ENTRY_FEE,
   TOKEN_ENTRY_FEE,
-  BASE_NETWORK
+  BASE_NETWORK,
+  PRICE_ORACLE
 } from '../config';
+import PriceService from '../services/PriceService';
 
 // Create context
 const Web3Context = createContext();
@@ -16,7 +18,7 @@ const Web3Context = createContext();
 // Game contract ABI (simplified for now)
 const gameContractABI = [
   "function enterGame() external payable",
-  "function enterGameWithToken() external",
+  "function enterGameWithToken(uint256 amount) external",
   "function claimReward() external",
   "event GameStarted(address indexed player1, address indexed player2, uint256 gameId)",
   "event GameEnded(uint256 indexed gameId, address indexed winner)"
@@ -42,6 +44,8 @@ export const Web3Provider = ({ children }) => {
   const [tokenBalance, setTokenBalance] = useState("0");
   const [paymentMethod, setPaymentMethod] = useState("eth"); // "eth" or "token"
   const [error, setError] = useState(null);
+  const [tokenEntryFee, setTokenEntryFee] = useState("0");
+  const [isLoadingPrice, setIsLoadingPrice] = useState(false);
 
   // Add useEffect for wallet reconnection on page refresh
   useEffect(() => {
@@ -65,6 +69,28 @@ export const Web3Provider = ({ children }) => {
       }
     };
   }, []);
+
+  // Fetch token price and calculate entry fee
+  useEffect(() => {
+    const fetchTokenPrice = async () => {
+      if (provider) {
+        try {
+          setIsLoadingPrice(true);
+          const trapAmount = await PriceService.getEquivalentTrapAmount(ETH_ENTRY_FEE, provider);
+          setTokenEntryFee(trapAmount.toString());
+        } catch (error) {
+          console.error("Error fetching token price:", error);
+          // Use fallback calculation
+          const fallbackAmount = PRICE_ORACLE.calculateTokenAmount(ETH_ENTRY_FEE);
+          setTokenEntryFee(fallbackAmount.toString());
+        } finally {
+          setIsLoadingPrice(false);
+        }
+      }
+    };
+
+    fetchTokenPrice();
+  }, [provider]);
 
   // Connect wallet
   const connectWallet = async () => {
@@ -283,51 +309,48 @@ export const Web3Provider = ({ children }) => {
   // Enter game (pay entry fee)
   const enterGame = async () => {
     try {
-      if (!gameContract || !signer) {
-        throw new Error("Wallet not connected or contract not initialized");
+      setError(null);
+      
+      if (!isConnected) {
+        setError("Please connect your wallet first");
+        return;
       }
       
-      let tx;
-      
-      if (paymentMethod === 'eth') {
-        // Entry fee in ETH
-        const entryFee = ethers.parseEther(ETH_ENTRY_FEE);
+      if (paymentMethod === "eth") {
+        // Enter game with ETH
+        const tx = await gameContract.enterGame({
+          value: ethers.parseEther(ETH_ENTRY_FEE)
+        });
         
-        // Call the enterGame function with the entry fee
-        tx = await gameContract.enterGame({ value: entryFee });
-      } else if (paymentMethod === 'token') {
-        // Check token allowance
+        await tx.wait();
+        return true;
+      } else {
+        // Enter game with tokens
+        // First, approve the token transfer
+        const tokenAmountWei = ethers.parseEther(tokenEntryFee);
+        
+        // Check if we have enough tokens
+        const userBalance = await tokenContract.balanceOf(account);
+        if (userBalance.lt(tokenAmountWei)) {
+          setError(`Insufficient token balance. You need ${tokenEntryFee} 🍊TRAP tokens.`);
+          return false;
+        }
+        
+        // Check if we already have approval
         const allowance = await tokenContract.allowance(account, GAME_CONTRACT_ADDRESS);
-        const requiredAmount = ethers.parseEther(TOKEN_ENTRY_FEE);
-        
-        // If allowance is insufficient, request approval
-        if (allowance < requiredAmount) {
-          const approveTx = await tokenContract.approve(GAME_CONTRACT_ADDRESS, requiredAmount);
+        if (allowance.lt(tokenAmountWei)) {
+          const approveTx = await tokenContract.approve(GAME_CONTRACT_ADDRESS, tokenAmountWei);
           await approveTx.wait();
         }
         
-        // Call the enterGameWithToken function
-        tx = await gameContract.enterGameWithToken();
-      } else {
-        throw new Error("Invalid payment method");
+        // Now enter the game with tokens
+        const tx = await gameContract.enterGameWithToken(tokenAmountWei);
+        await tx.wait();
+        return true;
       }
-      
-      // Wait for transaction to be mined
-      await tx.wait();
-      
-      // Update balances
-      if (paymentMethod === 'eth') {
-        const updatedBalance = await provider.getBalance(account);
-        setBalance(ethers.formatEther(updatedBalance));
-      } else {
-        const tokenBalanceWei = await tokenContract.balanceOf(account);
-        setTokenBalance(ethers.formatUnits(tokenBalanceWei, 18));
-      }
-      
-      return true;
-    } catch (err) {
-      console.error("Error entering game:", err);
-      setError(err.message || "Failed to enter game");
+    } catch (error) {
+      console.error("Error entering game:", error);
+      setError(error.message || "Failed to enter game");
       return false;
     }
   };
@@ -386,7 +409,10 @@ export const Web3Provider = ({ children }) => {
     setPaymentType,
     ADMIN_WALLET_ADDRESS,
     TRAP_TOKEN_ADDRESS,
-    switchToBaseNetwork
+    switchToBaseNetwork,
+    tokenEntryFee,
+    isLoadingPrice,
+    formatTokenAmount: PRICE_ORACLE.formatTokenAmount
   };
 
   return <Web3Context.Provider value={value}>{children}</Web3Context.Provider>;

@@ -11,7 +11,7 @@ pragma solidity ^0.8.17;
 contract PacmanGame {
     // Game fee constants
     uint256 public constant ENTRY_FEE = 0.0001 ether;
-    uint256 public constant TOKEN_ENTRY_FEE = 10 * 10**18; // 10 🍊TRAP tokens (assuming 18 decimals)
+    // Token entry fee is now dynamic and passed as a parameter
     uint256 public constant PLATFORM_FEE_PERCENTAGE = 69; // 6.9% (69 / 1000)
     uint256 public constant PERCENTAGE_DENOMINATOR = 1000;
     
@@ -47,6 +47,7 @@ contract PacmanGame {
     
     // Pending players waiting for a match (Token games)
     address public pendingTokenPlayer;
+    uint256 public pendingTokenAmount; // Amount of tokens paid by the pending player
     
     // Total games created
     uint256 public totalGames;
@@ -128,20 +129,22 @@ contract PacmanGame {
     
     /**
      * @dev Player enters the game by paying with 🍊TRAP tokens
+     * @param amount The amount of tokens to pay (dynamically calculated based on ETH equivalent)
      */
-    function enterGameWithToken() external {
+    function enterGameWithToken(uint256 amount) external {
         // Get token contract
         IERC20 token = IERC20(TRAP_TOKEN_ADDRESS);
         
         // Check if player has enough tokens
-        require(token.balanceOf(msg.sender) >= TOKEN_ENTRY_FEE, "Insufficient token balance");
+        require(token.balanceOf(msg.sender) >= amount, "Insufficient token balance");
         
         // Transfer tokens from player to contract
-        require(token.transferFrom(msg.sender, address(this), TOKEN_ENTRY_FEE), "Token transfer failed");
+        require(token.transferFrom(msg.sender, address(this), amount), "Token transfer failed");
         
         // If there's no pending token player, set the current player as pending
         if (pendingTokenPlayer == address(0)) {
             pendingTokenPlayer = msg.sender;
+            pendingTokenAmount = amount;
             emit GameCreated(totalGames + 1, msg.sender, true);
         } else {
             // If there's already a pending player, start a new game
@@ -152,7 +155,7 @@ contract PacmanGame {
             uint256 gameId = totalGames;
             
             // Calculate prize pool and platform fee
-            uint256 totalPrize = TOKEN_ENTRY_FEE * 2;
+            uint256 totalPrize = pendingTokenAmount + amount;
             uint256 platformFee = (totalPrize * PLATFORM_FEE_PERCENTAGE) / PERCENTAGE_DENOMINATOR;
             uint256 prize = totalPrize - platformFee;
             
@@ -176,6 +179,7 @@ contract PacmanGame {
             
             // Reset pending token player
             pendingTokenPlayer = address(0);
+            pendingTokenAmount = 0;
             
             // Emit event
             emit GameStarted(gameId, games[gameId].player1, games[gameId].player2, true);
@@ -268,7 +272,7 @@ contract PacmanGame {
         
         // Refund token entry fee
         IERC20 token = IERC20(TRAP_TOKEN_ADDRESS);
-        require(token.transfer(msg.sender, TOKEN_ENTRY_FEE), "Failed to refund token entry fee");
+        require(token.transfer(msg.sender, pendingTokenAmount), "Failed to refund token entry fee");
     }
     
     /**

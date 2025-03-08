@@ -1,7 +1,23 @@
 import React from 'react';
-import { TRAP_TOKEN_INFO } from '../config';
+import { TRAP_TOKEN_INFO, ETH_ENTRY_FEE } from '../config';
+import { useWeb3 } from '../contexts/Web3Context';
 
 const TokenInfo = () => {
+  const { tokenEntryFee, isLoadingPrice, formatTokenAmount } = useWeb3();
+
+  // Format the token entry fee for display
+  const displayTokenFee = () => {
+    if (isLoadingPrice) {
+      return "Loading...";
+    }
+    
+    if (!tokenEntryFee || tokenEntryFee === "0") {
+      return "Calculating...";
+    }
+    
+    return `${formatTokenAmount ? formatTokenAmount(parseFloat(tokenEntryFee)) : tokenEntryFee}`;
+  };
+
   return (
     <div className="bg-gray-800 rounded-lg p-6 mb-6">
       <h2 className="text-2xl font-bold text-orange-500 mb-4">About {TRAP_TOKEN_INFO.symbol}</h2>
@@ -58,7 +74,11 @@ const TokenInfo = () => {
             
             <div className="bg-gray-700 p-3 rounded">
               <h4 className="text-orange-400 font-semibold">Game Entry Fee</h4>
-              <p className="text-white">{10} {TRAP_TOKEN_INFO.symbol}</p>
+              <p className="text-white">
+                {displayTokenFee()} {TRAP_TOKEN_INFO.symbol}
+                {isLoadingPrice && <span className="ml-2 text-xs text-gray-400">(Fetching price...)</span>}
+              </p>
+              <p className="text-xs text-gray-400 mt-1">Equivalent to {ETH_ENTRY_FEE} ETH</p>
             </div>
           </div>
           
@@ -71,6 +91,14 @@ const TokenInfo = () => {
               <li>Be part of the tangerine-themed crypto gaming community</li>
               <li>Join the "Trump on Solana is a trap" meme movement</li>
             </ul>
+          </div>
+          
+          <div className="mt-4 bg-orange-500 bg-opacity-20 p-4 rounded">
+            <h4 className="text-lg font-semibold text-orange-400 mb-2">Dynamic Pricing</h4>
+            <p className="text-gray-300">
+              Our game uses Uniswap oracle pricing to ensure that players pay the same value whether using ETH or {TRAP_TOKEN_INFO.symbol} tokens.
+              The token amount is dynamically calculated to be equivalent to {ETH_ENTRY_FEE} ETH based on current market rates.
+            </p>
           </div>
         </div>
       </div>

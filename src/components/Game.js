@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useWeb3 } from '../contexts/Web3Context';
 import PaymentSelector from './PaymentSelector';
 import io from 'socket.io-client';
-import { TRAP_TOKEN_INFO } from '../config';
+import { TRAP_TOKEN_INFO, ETH_ENTRY_FEE } from '../config';
 
 // Game constants
 const CANVAS_WIDTH = 600;
@@ -31,7 +31,15 @@ const Game = () => {
   const [socket, setSocket] = useState(null);
   const [error, setError] = useState(null);
   
-  const { account, enterGame, claimReward, paymentMethod } = useWeb3();
+  const { 
+    isConnected, 
+    connectWallet, 
+    enterGame, 
+    claimReward, 
+    paymentMethod,
+    tokenEntryFee,
+    formatTokenAmount
+  } = useWeb3();
   
   // Initialize socket connection
   useEffect(() => {
@@ -169,7 +177,7 @@ const Game = () => {
       
       // Check for game over
       if (dots.length === 0) {
-        endGame(player.score > opponent.score ? account : 'opponent');
+        endGame(player.score > opponent.score ? isConnected : 'opponent');
       }
       
       // Continue game loop
@@ -206,7 +214,7 @@ const Game = () => {
       cancelAnimationFrame(gameLoopId);
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [gameState, countdown, account]);
+  }, [gameState, countdown, isConnected]);
   
   // Create maze
   const createMaze = () => {
@@ -436,7 +444,12 @@ const Game = () => {
             <h2 className="text-2xl font-bold text-orange-500 mb-6">Waiting for Opponent</h2>
             <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-orange-500 mb-4"></div>
             <p className="text-gray-300">Payment successful! Looking for an opponent...</p>
-            <p className="text-gray-400 text-sm mt-4">Using {paymentMethod === 'eth' ? 'ETH' : `${TRAP_TOKEN_INFO.symbol} tokens`} for this game</p>
+            <p className="text-gray-400 text-sm mt-4">
+              Using {paymentMethod === 'eth' 
+                ? `${ETH_ENTRY_FEE} ETH` 
+                : `${formatTokenAmount ? formatTokenAmount(parseFloat(tokenEntryFee)) : tokenEntryFee} ${TRAP_TOKEN_INFO.symbol} tokens`
+              } for this game
+            </p>
           </div>
         );
       
@@ -476,7 +489,7 @@ const Game = () => {
           <div className="flex flex-col items-center">
             <h2 className="text-3xl font-bold text-orange-500 mb-6">Game Over!</h2>
             
-            {winner === account ? (
+            {winner === isConnected ? (
               <div className="bg-green-500 text-white p-6 rounded-lg mb-6 text-center">
                 <p className="text-2xl font-bold mb-2">You Won!</p>
                 <p>Congratulations! You've earned a reward.</p>
@@ -489,7 +502,7 @@ const Game = () => {
             )}
             
             <div className="flex gap-4">
-              {winner === account && (
+              {winner === isConnected && (
                 <button 
                   onClick={handleClaimReward}
                   className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-bold"
